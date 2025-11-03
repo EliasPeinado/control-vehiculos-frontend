@@ -1,0 +1,158 @@
+<div class="px-4 py-6">
+  <div class="mb-8">
+    <h1 class="text-3xl font-bold text-gray-900">Nueva Evaluación</h1>
+    <p class="mt-2 text-sm text-gray-600">
+      Registre una inspección técnica vehicular completa
+    </p>
+  </div>
+
+  <app-loading-spinner *ngIf="loadingChequeos()" message="Cargando formulario..."></app-loading-spinner>
+
+  <div *ngIf="!loadingChequeos()" class="max-w-4xl">
+    <app-alert *ngIf="errorMessage()" variant="error" (closed)="errorMessage.set(null)">
+      {{ errorMessage() }}
+    </app-alert>
+
+    <app-alert *ngIf="successMessage()" variant="success" (closed)="successMessage.set(null)">
+      {{ successMessage() }}
+    </app-alert>
+
+    <div class="space-y-6">
+      <!-- Datos del Turno -->
+      <div class="card">
+        <h2 class="text-lg font-semibold text-gray-900 mb-4">Datos del Turno</h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label for="turnoId" class="block text-sm font-medium text-gray-700 mb-1">
+              ID del Turno <span class="text-red-600">*</span>
+            </label>
+            <input
+              id="turnoId"
+              type="text"
+              [(ngModel)]="turnoId"
+              class="input-field"
+              placeholder="GUID del turno"
+              required>
+          </div>
+          <div>
+            <label for="inspectorId" class="block text-sm font-medium text-gray-700 mb-1">
+              ID del Inspector <span class="text-red-600">*</span>
+            </label>
+            <input
+              id="inspectorId"
+              type="text"
+              [(ngModel)]="inspectorId"
+              class="input-field"
+              placeholder="GUID del inspector"
+              required>
+          </div>
+        </div>
+      </div>
+
+      <!-- Chequeos -->
+      <div class="card">
+        <h2 class="text-lg font-semibold text-gray-900 mb-4">
+          Chequeos ({{ chequeosData().length }}/8)
+        </h2>
+        
+        <div class="space-y-6">
+          <div *ngFor="let chequeo of chequeosData(); let i = index" 
+               class="border border-gray-200 rounded-lg p-4">
+            <div class="flex items-start justify-between mb-3">
+              <div>
+                <h3 class="text-base font-semibold text-gray-900">
+                  {{ i + 1 }}. {{ chequeo.nombre }}
+                </h3>
+                <p class="text-sm text-gray-600 mt-1">{{ chequeo.descripcion }}</p>
+              </div>
+              <span class="text-2xl font-bold"
+                    [class.text-green-600]="chequeo.puntaje >= 8"
+                    [class.text-yellow-600]="chequeo.puntaje >= 5 && chequeo.puntaje < 8"
+                    [class.text-red-600]="chequeo.puntaje < 5">
+                {{ chequeo.puntaje }}/10
+              </span>
+            </div>
+
+            <div class="space-y-3">
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">
+                  Puntaje
+                </label>
+                <input
+                  type="range"
+                  min="0"
+                  max="10"
+                  [(ngModel)]="chequeo.puntaje"
+                  (ngModelChange)="onPuntajeChange()"
+                  class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer">
+                <div class="flex justify-between text-xs text-gray-500 mt-1">
+                  <span>0</span>
+                  <span>5</span>
+                  <span>10</span>
+                </div>
+              </div>
+
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">
+                  Observaciones
+                </label>
+                <textarea
+                  [(ngModel)]="chequeo.observacion"
+                  rows="2"
+                  class="input-field resize-none"
+                  placeholder="Observaciones sobre este chequeo..."></textarea>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Resumen -->
+      <div class="card bg-blue-50 border-2 border-blue-200">
+        <h2 class="text-lg font-semibold text-gray-900 mb-3">Resumen de Evaluación</h2>
+        <div class="space-y-2">
+          <div class="flex justify-between items-center">
+            <span class="text-gray-700 font-medium">Puntaje Total:</span>
+            <span class="text-3xl font-bold text-blue-600">{{ puntajeTotal() }}/100</span>
+          </div>
+          <div class="flex justify-between items-center">
+            <span class="text-gray-700 font-medium">Resultado Estimado:</span>
+            <span class="text-lg font-semibold"
+                  [class.text-green-600]="resultadoEstimado() === 'SEGURO'"
+                  [class.text-yellow-600]="resultadoEstimado() === 'CONDICIONAL'"
+                  [class.text-red-600]="resultadoEstimado() === 'RECHEQUEO'">
+              {{ resultadoEstimadoNombre() }}
+            </span>
+          </div>
+        </div>
+        <div class="mt-4 p-3 bg-white rounded border border-blue-200">
+          <p class="text-sm text-gray-600">
+            <strong>Criterios:</strong><br>
+            • SEGURO: Puntaje total > 80 y todos los chequeos ≥ 5<br>
+            • RECHEQUEO: Algún chequeo < 5 o total < 40<br>
+            • CONDICIONAL: Casos intermedios
+          </p>
+        </div>
+      </div>
+
+      <!-- Botones -->
+      <div class="flex gap-3">
+        <button
+          type="button"
+          (click)="onSubmit()"
+          [disabled]="!isFormValid() || submitting()"
+          class="btn-primary flex-1">
+          <span *ngIf="!submitting()">Registrar Evaluación</span>
+          <span *ngIf="submitting()">Registrando...</span>
+        </button>
+        <button
+          type="button"
+          (click)="router.navigate(['/dashboard'])"
+          [disabled]="submitting()"
+          class="btn-secondary">
+          Cancelar
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

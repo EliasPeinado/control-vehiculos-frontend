@@ -1,0 +1,112 @@
+<div class="px-4 py-6">
+  <!-- Header -->
+  <div class="mb-8">
+    <h1 class="text-3xl font-bold text-gray-900">Reservar Turno</h1>
+    <p class="mt-2 text-sm text-gray-600">
+      Programe una inspección vehicular en uno de nuestros centros
+    </p>
+  </div>
+
+  <!-- Loading State -->
+  <app-loading-spinner *ngIf="loadingCentros()" message="Cargando centros..."></app-loading-spinner>
+
+  <!-- Form -->
+  <div *ngIf="!loadingCentros()" class="max-w-2xl">
+    <app-alert *ngIf="errorMessage()" variant="error" (closed)="errorMessage.set(null)">
+      {{ errorMessage() }}
+    </app-alert>
+
+    <app-alert *ngIf="successMessage()" variant="success" (closed)="successMessage.set(null)">
+      {{ successMessage() }}
+    </app-alert>
+
+    <div class="card space-y-6">
+      <!-- Step 1: Centro -->
+      <div>
+        <app-dropdown-select
+          label="Centro de Inspección"
+          placeholder="Seleccione un centro"
+          [options]="centroOptions()"
+          [value]="selectedCentroId()"
+          (valueChange)="onCentroChange($event)"
+          [required]="true">
+        </app-dropdown-select>
+      </div>
+
+      <!-- Step 2: Fecha -->
+      <div *ngIf="selectedCentroId()">
+        <label for="fecha" class="block text-sm font-medium text-gray-700 mb-1">
+          Fecha <span class="text-red-600">*</span>
+        </label>
+        <input
+          id="fecha"
+          type="date"
+          [(ngModel)]="selectedFecha"
+          (ngModelChange)="onFechaChange()"
+          [min]="minDate()"
+          class="input-field"
+          required>
+      </div>
+
+      <!-- Step 3: Horario -->
+      <div *ngIf="selectedFecha && !loadingSlots()">
+        <label class="block text-sm font-medium text-gray-700 mb-3">
+          Horario Disponible <span class="text-red-600">*</span>
+        </label>
+        <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
+          <button
+            *ngFor="let slot of slots()"
+            type="button"
+            (click)="selectSlot(slot)"
+            [disabled]="!slot.disponible"
+            [class.bg-blue-500]="selectedSlot() === slot && slot.disponible"
+            [class.text-white]="selectedSlot() === slot && slot.disponible"
+            [class.bg-green-100]="selectedSlot() !== slot && slot.disponible"
+            [class.text-green-800]="selectedSlot() !== slot && slot.disponible"
+            [class.hover:bg-green-200]="selectedSlot() !== slot && slot.disponible"
+            [class.bg-gray-100]="!slot.disponible"
+            [class.text-gray-400]="!slot.disponible"
+            [class.cursor-not-allowed]="!slot.disponible"
+            class="px-3 py-2 rounded-lg text-sm font-medium transition-colors">
+            {{ formatTime(slot.inicio) }}
+          </button>
+        </div>
+        <p *ngIf="slots().length === 0" class="text-sm text-gray-500 mt-2">
+          No hay horarios disponibles para esta fecha.
+        </p>
+      </div>
+
+      <app-loading-spinner *ngIf="loadingSlots()" [size]="32" message="Cargando horarios..."></app-loading-spinner>
+
+      <!-- Step 4: Matrícula -->
+      <div *ngIf="selectedSlot()">
+        <label for="matricula" class="block text-sm font-medium text-gray-700 mb-1">
+          Matrícula del Vehículo <span class="text-red-600">*</span>
+        </label>
+        <input
+          id="matricula"
+          type="text"
+          [(ngModel)]="matricula"
+          placeholder="ABC123"
+          class="input-field"
+          maxlength="12"
+          required>
+        <p class="mt-1 text-sm text-gray-500">
+          Ingrese la matrícula del vehículo (5-12 caracteres)
+        </p>
+      </div>
+
+      <!-- Submit Button -->
+      <div *ngIf="isFormValid()" class="pt-4 border-t border-gray-200">
+        <button
+          type="button"
+          (click)="onSubmit()"
+          [disabled]="submitting()"
+          class="btn-primary w-full">
+          <span *ngIf="!submitting()">Reservar Turno</span>
+          <span *ngIf="submitting()">Reservando...</span>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

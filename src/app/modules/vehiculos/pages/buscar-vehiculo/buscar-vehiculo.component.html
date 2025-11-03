@@ -1,0 +1,155 @@
+<div class="px-4 py-6">
+  <!-- Header -->
+  <div class="mb-8">
+    <h1 class="text-3xl font-bold text-gray-900">Buscar Vehículo</h1>
+    <p class="mt-2 text-sm text-gray-600">
+      Consulte el historial de evaluaciones de un vehículo
+    </p>
+  </div>
+
+  <!-- Search Form -->
+  <div class="max-w-2xl mb-8">
+    <app-alert *ngIf="errorMessage()" variant="error" (closed)="errorMessage.set(null)">
+      {{ errorMessage() }}
+    </app-alert>
+
+    <div class="card">
+      <label for="matricula" class="block text-sm font-medium text-gray-700 mb-2">
+        Matrícula del Vehículo
+      </label>
+      <div class="flex gap-2">
+        <input
+          id="matricula"
+          type="text"
+          [(ngModel)]="matriculaSearch"
+          (keyup.enter)="buscarVehiculo()"
+          placeholder="ABC123"
+          class="input-field flex-1"
+          maxlength="12">
+        <button
+          type="button"
+          (click)="buscarVehiculo()"
+          [disabled]="searching() || !matriculaSearch.trim()"
+          class="btn-primary">
+          <span *ngIf="!searching()">Buscar</span>
+          <span *ngIf="searching()">Buscando...</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Loading State -->
+  <app-loading-spinner *ngIf="searching()" message="Buscando vehículo..."></app-loading-spinner>
+
+  <!-- Vehicle Info -->
+  <div *ngIf="vehiculo() && !searching()" class="space-y-6">
+    <!-- Vehicle Card -->
+    <div class="card">
+      <div class="flex items-start justify-between">
+        <div>
+          <h2 class="text-2xl font-bold text-gray-900">{{ vehiculo()!.matricula }}</h2>
+          <p class="mt-1 text-lg text-gray-600" *ngIf="vehiculo()!.marca || vehiculo()!.modelo">
+            {{ vehiculo()!.marca }} {{ vehiculo()!.modelo }}
+            <span *ngIf="vehiculo()!.anio">({{ vehiculo()!.anio }})</span>
+          </p>
+          <p class="mt-2 text-sm text-gray-500">
+            Propietario: {{ vehiculo()!.propietario.nombre }}
+          </p>
+        </div>
+        <app-badge [color]="getEstadoColor(vehiculo()!.estadoVehiculo.codigo)">
+          {{ vehiculo()!.estadoVehiculo.nombre }}
+        </app-badge>
+      </div>
+    </div>
+
+    <!-- Evaluaciones History -->
+    <div class="card">
+      <h3 class="text-xl font-semibold text-gray-900 mb-4">Historial de Evaluaciones</h3>
+
+      <app-loading-spinner *ngIf="loadingEvaluaciones()" [size]="32" message="Cargando evaluaciones..."></app-loading-spinner>
+
+      <div *ngIf="!loadingEvaluaciones() && evaluaciones().length === 0" class="text-center py-8 text-gray-500">
+        No hay evaluaciones registradas para este vehículo.
+      </div>
+
+      <div *ngIf="!loadingEvaluaciones() && evaluaciones().length > 0" class="space-y-4">
+        <div *ngFor="let evaluacion of evaluaciones()" 
+             class="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
+          <div class="flex items-start justify-between">
+            <div class="flex-1">
+              <div class="flex items-center gap-3 mb-2">
+                <span class="text-sm font-medium text-gray-900">
+                  {{ formatDate(evaluacion.fecha) }}
+                </span>
+                <app-badge [color]="getResultadoColor(evaluacion.resultado.codigo)">
+                  {{ evaluacion.resultado.nombre }}
+                </app-badge>
+              </div>
+              <div class="flex items-center gap-4 text-sm text-gray-600">
+                <span class="font-semibold">
+                  Puntaje Total: {{ evaluacion.puntajeTotal }}/100
+                </span>
+              </div>
+            </div>
+            <button
+              type="button"
+              (click)="toggleDetalles(evaluacion.id)"
+              class="text-blue-600 hover:text-blue-800 text-sm font-medium">
+              {{ detallesExpandidos().has(evaluacion.id) ? 'Ocultar' : 'Ver Detalles' }}
+            </button>
+          </div>
+
+          <!-- Detalles Expandidos -->
+          <div *ngIf="detallesExpandidos().has(evaluacion.id)" class="mt-4 pt-4 border-t border-gray-200">
+            <h4 class="text-sm font-semibold text-gray-900 mb-3">Detalles de Chequeos:</h4>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div *ngFor="let detalle of evaluacion.detalles" 
+                   class="bg-gray-50 rounded-lg p-3">
+                <div class="flex justify-between items-start mb-1">
+                  <span class="text-sm font-medium text-gray-900">
+                    {{ detalle.chequeo.nombre }}
+                  </span>
+                  <span class="text-sm font-bold"
+                        [class.text-green-600]="detalle.puntaje >= 8"
+                        [class.text-yellow-600]="detalle.puntaje >= 5 && detalle.puntaje < 8"
+                        [class.text-red-600]="detalle.puntaje < 5">
+                    {{ detalle.puntaje }}/10
+                  </span>
+                </div>
+                <p *ngIf="detalle.observacion" class="text-xs text-gray-600 mt-1">
+                  {{ detalle.observacion }}
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Pagination -->
+        <div *ngIf="paginationMeta()" class="flex items-center justify-between pt-4 border-t border-gray-200">
+          <span class="text-sm text-gray-700">
+            Total: {{ paginationMeta()!.total }} evaluaciones
+          </span>
+          <div class="flex gap-2">
+            <button
+              type="button"
+              (click)="previousPage()"
+              [disabled]="currentPage() === 1"
+              class="btn-secondary text-sm">
+              Anterior
+            </button>
+            <span class="px-4 py-2 text-sm text-gray-700">
+              Página {{ currentPage() }}
+            </span>
+            <button
+              type="button"
+              (click)="nextPage()"
+              [disabled]="!paginationMeta()!.hasNext"
+              class="btn-secondary text-sm">
+              Siguiente
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
