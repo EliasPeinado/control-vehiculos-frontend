@@ -2,6 +2,12 @@ import { Vehiculo } from '../vehiculos/vehiculo.model';
 import { Centro } from '../centros/centro.model';
 import { EstadoTurno } from '../catalogos/catalogo.model';
 
+export interface UsuarioSimple {
+  id: string;
+  nombre: string;
+  email: string;
+}
+
 export interface Turno {
   id: string;
   vehiculoId: string;
@@ -11,6 +17,8 @@ export interface Turno {
   estadoTurno: EstadoTurno;
   vehiculo: Vehiculo;
   centro: Centro;
+  creadoPorUsuarioId?: string;
+  creadoPorUsuario?: UsuarioSimple;
 }
 
 export interface CreateTurnoRequest {

@@ -1,158 +1,476 @@
-<div class="px-4 py-6">
+<div class="px-4 py-3">
   <div class="mb-8">
     <h1 class="text-3xl font-bold text-gray-900">Nueva Evaluación</h1>
     <p class="mt-2 text-sm text-gray-600">
-      Registre una inspección técnica vehicular completa
+      {{
+        evaluationStarted()
+          ? "Registre la inspección técnica vehicular"
+          : "Seleccione un turno pendiente para evaluar"
+      }}
     </p>
   </div>
 
-  <app-loading-spinner *ngIf="loadingChequeos()" message="Cargando formulario..."></app-loading-spinner>
-
-  <div *ngIf="!loadingChequeos()" class="max-w-4xl">
-    <app-alert *ngIf="errorMessage()" variant="error" (closed)="errorMessage.set(null)">
+  <!-- Alerts -->
+  <div class="max-w-4xl mb-6">
+    <app-alert
+      *ngIf="errorMessage()"
+      variant="error"
+      (closed)="errorMessage.set(null)"
+    >
       {{ errorMessage() }}
     </app-alert>
 
-    <app-alert *ngIf="successMessage()" variant="success" (closed)="successMessage.set(null)">
+    <app-alert
+      *ngIf="successMessage()"
+      variant="success"
+      (closed)="successMessage.set(null)"
+    >
       {{ successMessage() }}
     </app-alert>
+  </div>
 
-    <div class="space-y-6">
-      <!-- Datos del Turno -->
-      <div class="card">
-        <h2 class="text-lg font-semibold text-gray-900 mb-4">Datos del Turno</h2>
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label for="turnoId" class="block text-sm font-medium text-gray-700 mb-1">
-              ID del Turno <span class="text-red-600">*</span>
-            </label>
-            <input
-              id="turnoId"
-              type="text"
-              [(ngModel)]="turnoId"
-              class="input-field"
-              placeholder="GUID del turno"
-              required>
-          </div>
-          <div>
-            <label for="inspectorId" class="block text-sm font-medium text-gray-700 mb-1">
-              ID del Inspector <span class="text-red-600">*</span>
-            </label>
-            <input
-              id="inspectorId"
-              type="text"
-              [(ngModel)]="inspectorId"
-              class="input-field"
-              placeholder="GUID del inspector"
-              required>
-          </div>
+  <!-- MOMENTO 1: Selección de Turno -->
+  <div *ngIf="!evaluationStarted() && canEvaluate()" class="max-w-6xl">
+    <!-- Filtros y Vista -->
+    <div class="card mb-6">
+      <div class="flex items-center justify-between mb-4">
+        <h2 class="text-lg font-semibold text-gray-900">Turnos Pendientes</h2>
+        <div class="flex gap-2">
+          <button
+            type="button"
+            (click)="toggleViewMode()"
+            class="btn-secondary text-sm"
+          >
+            {{ viewMode() === "cards" ? "📋 Ver Lista" : "🎴 Ver Cards" }}
+          </button>
         </div>
       </div>
 
-      <!-- Chequeos -->
-      <div class="card">
-        <h2 class="text-lg font-semibold text-gray-900 mb-4">
-          Chequeos ({{ chequeosData().length }}/8)
-        </h2>
-        
-        <div class="space-y-6">
-          <div *ngFor="let chequeo of chequeosData(); let i = index" 
-               class="border border-gray-200 rounded-lg p-4">
-            <div class="flex items-start justify-between mb-3">
-              <div>
-                <h3 class="text-base font-semibold text-gray-900">
-                  {{ i + 1 }}. {{ chequeo.nombre }}
-                </h3>
-                <p class="text-sm text-gray-600 mt-1">{{ chequeo.descripcion }}</p>
-              </div>
-              <span class="text-2xl font-bold"
-                    [class.text-green-600]="chequeo.puntaje >= 8"
-                    [class.text-yellow-600]="chequeo.puntaje >= 5 && chequeo.puntaje < 8"
-                    [class.text-red-600]="chequeo.puntaje < 5">
-                {{ chequeo.puntaje }}/10
-              </span>
-            </div>
-
-            <div class="space-y-3">
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">
-                  Puntaje
-                </label>
-                <input
-                  type="range"
-                  min="0"
-                  max="10"
-                  [(ngModel)]="chequeo.puntaje"
-                  (ngModelChange)="onPuntajeChange()"
-                  class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer">
-                <div class="flex justify-between text-xs text-gray-500 mt-1">
-                  <span>0</span>
-                  <span>5</span>
-                  <span>10</span>
-                </div>
-              </div>
-
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">
-                  Observaciones
-                </label>
-                <textarea
-                  [(ngModel)]="chequeo.observacion"
-                  rows="2"
-                  class="input-field resize-none"
-                  placeholder="Observaciones sobre este chequeo..."></textarea>
-              </div>
-            </div>
-          </div>
+      <!-- Filtros -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+        <div>
+          <app-dropdown-select
+            label="Filtrar por Centro"
+            placeholder="Todos los centros"
+            [options]="centroOptions()"
+            [value]="selectedCentroId()"
+            (valueChange)="onCentroFilterChange($event)"
+          >
+          </app-dropdown-select>
+        </div>
+        <div>
+          <label
+            for="matriculaFilter"
+            class="block text-sm font-medium text-gray-700 mb-1"
+          >
+            Filtrar por Matrícula
+          </label>
+          <input
+            id="matriculaFilter"
+            type="text"
+            [(ngModel)]="matriculaFilter"
+            (input)="onMatriculaFilterChange()"
+            placeholder="Ingrese matrícula..."
+            class="input-field"
+            maxlength="12"
+          />
         </div>
       </div>
 
-      <!-- Resumen -->
-      <div class="card bg-blue-50 border-2 border-blue-200">
-        <h2 class="text-lg font-semibold text-gray-900 mb-3">Resumen de Evaluación</h2>
-        <div class="space-y-2">
-          <div class="flex justify-between items-center">
-            <span class="text-gray-700 font-medium">Puntaje Total:</span>
-            <span class="text-3xl font-bold text-blue-600">{{ puntajeTotal() }}/100</span>
+      <div class="flex justify-between items-center">
+        <p class="text-sm text-gray-600">
+          {{ turnos().length }} turno{{
+            turnos().length !== 1 ? "s" : ""
+          }}
+          encontrado{{ turnos().length !== 1 ? "s" : "" }}
+        </p>
+        <button
+          *ngIf="selectedCentroId() || matriculaFilter"
+          type="button"
+          (click)="clearFilters()"
+          class="text-sm text-blue-600 hover:text-blue-800"
+        >
+          Limpiar filtros
+        </button>
+      </div>
+    </div>
+
+    <!-- Loading State -->
+    <app-loading-spinner
+      *ngIf="loadingTurnos()"
+      message="Cargando turnos..."
+    ></app-loading-spinner>
+
+    <!-- No hay turnos -->
+    <div
+      *ngIf="!loadingTurnos() && turnos().length === 0"
+      class="card text-center py-12"
+    >
+      <p class="text-gray-500 text-lg">
+        No hay turnos pendientes{{
+          selectedCentroId() || matriculaFilter
+            ? " con los filtros aplicados"
+            : ""
+        }}
+      </p>
+    </div>
+
+    <!-- Vista Cards -->
+    <div
+      *ngIf="!loadingTurnos() && turnos().length > 0 && viewMode() === 'cards'"
+      class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"
+    >
+      <div
+        *ngFor="let turno of turnos()"
+        class="card cursor-pointer hover:shadow-lg transition-shadow border-2 border-transparent hover:border-blue-300"
+        (click)="startEvaluation(turno)"
+      >
+        <div class="flex justify-between items-start mb-3">
+          <div>
+            <p class="text-xl font-bold text-gray-900">
+              {{ turno.vehiculo.matricula }}
+            </p>
+            <p class="text-sm text-gray-600">
+              {{ turno.vehiculo.marca }} {{ turno.vehiculo.modelo }}
+            </p>
           </div>
-          <div class="flex justify-between items-center">
-            <span class="text-gray-700 font-medium">Resultado Estimado:</span>
-            <span class="text-lg font-semibold"
-                  [class.text-green-600]="resultadoEstimado() === 'SEGURO'"
-                  [class.text-yellow-600]="resultadoEstimado() === 'CONDICIONAL'"
-                  [class.text-red-600]="resultadoEstimado() === 'RECHEQUEO'">
-              {{ resultadoEstimadoNombre() }}
-            </span>
-          </div>
+          <app-badge
+            [color]="
+              turno.estadoTurno.codigo === 'CONFIRMADO' ? 'green' : 'blue'
+            "
+          >
+            {{ turno.estadoTurno.nombre }}
+          </app-badge>
         </div>
-        <div class="mt-4 p-3 bg-white rounded border border-blue-200">
-          <p class="text-sm text-gray-600">
-            <strong>Criterios:</strong><br>
-            • SEGURO: Puntaje total > 80 y todos los chequeos ≥ 5<br>
-            • RECHEQUEO: Algún chequeo < 5 o total < 40<br>
-            • CONDICIONAL: Casos intermedios
+        <div class="space-y-2 text-sm text-gray-600">
+          <p>
+            <span class="font-semibold">Centro:</span> {{ turno.centro.nombre }}
+          </p>
+          <p>
+            <span class="font-semibold">Fecha:</span>
+            {{ formatTurnoDate(turno.fechaHora) }}
+          </p>
+
+          <!-- Información del Propietario -->
+          <div class="mt-3 pt-3 border-t border-gray-200">
+            <p class="font-semibold text-gray-700 mb-1">Propietario:</p>
+            <p class="ml-2">{{ turno.vehiculo.propietario.nombre }}</p>
+            <p
+              *ngIf="turno.vehiculo.propietario.email"
+              class="ml-2 text-xs text-gray-500"
+            >
+              📧 {{ turno.vehiculo.propietario.email }}
+            </p>
+            <p
+              *ngIf="turno.vehiculo.propietario.telefono"
+              class="ml-2 text-xs text-gray-500"
+            >
+              📱 {{ turno.vehiculo.propietario.telefono }}
+            </p>
+          </div>
+
+          <!-- Usuario que reservó -->
+          <p
+            *ngIf="turno.creadoPorUsuario"
+            class="text-xs text-gray-500 mt-2 pt-2 border-t border-gray-200"
+          >
+            <span class="font-semibold">Reservado por:</span>
+            {{ turno.creadoPorUsuario.nombre }}
           </p>
         </div>
+        <button type="button" class="btn-primary w-full mt-4">
+          Iniciar Evaluación
+        </button>
       </div>
+    </div>
 
-      <!-- Botones -->
-      <div class="flex gap-3">
+    <!-- Vista Lista -->
+    <div
+      *ngIf="!loadingTurnos() && turnos().length > 0 && viewMode() === 'list'"
+      class="card"
+    >
+      <div class="overflow-x-auto">
+        <table class="min-w-full divide-y divide-gray-200">
+          <thead class="bg-gray-50">
+            <tr>
+              <th
+                class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+              >
+                Matrícula
+              </th>
+              <th
+                class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+              >
+                Propietario
+              </th>
+              <th
+                class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+              >
+                Centro
+              </th>
+              <th
+                class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+              >
+                Fecha
+              </th>
+              <th
+                class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+              >
+                Reservado por
+              </th>
+              <th
+                class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+              >
+                Estado
+              </th>
+              <th
+                class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+              >
+                Acción
+              </th>
+            </tr>
+          </thead>
+          <tbody class="bg-white divide-y divide-gray-200">
+            <tr *ngFor="let turno of turnos()" class="hover:bg-gray-50">
+              <td
+                class="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-900"
+              >
+                <div>{{ turno.vehiculo.matricula }}</div>
+                <div class="text-xs text-gray-500 font-normal">
+                  {{ turno.vehiculo.marca }} {{ turno.vehiculo.modelo }}
+                </div>
+              </td>
+              <td class="px-6 py-4 text-sm text-gray-600">
+                <div class="font-medium">
+                  {{ turno.vehiculo.propietario.nombre }}
+                </div>
+                <div
+                  *ngIf="turno.vehiculo.propietario.email"
+                  class="text-xs text-gray-500"
+                >
+                  📧 {{ turno.vehiculo.propietario.email }}
+                </div>
+                <div
+                  *ngIf="turno.vehiculo.propietario.telefono"
+                  class="text-xs text-gray-500"
+                >
+                  📱 {{ turno.vehiculo.propietario.telefono }}
+                </div>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                {{ turno.centro.nombre }}
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                {{ formatTurnoDate(turno.fechaHora) }}
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                <span *ngIf="turno.creadoPorUsuario">{{
+                  turno.creadoPorUsuario.nombre
+                }}</span>
+                <span
+                  *ngIf="!turno.creadoPorUsuario"
+                  class="text-gray-400 italic"
+                  >N/A</span
+                >
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap">
+                <app-badge
+                  [color]="
+                    turno.estadoTurno.codigo === 'CONFIRMADO' ? 'green' : 'blue'
+                  "
+                >
+                  {{ turno.estadoTurno.nombre }}
+                </app-badge>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm">
+                <button
+                  type="button"
+                  (click)="startEvaluation(turno)"
+                  class="text-blue-600 hover:text-blue-800 font-medium"
+                >
+                  Evaluar
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- MOMENTO 2: Evaluación -->
+  <div *ngIf="evaluationStarted() && selectedTurno()" class="max-w-4xl">
+    <!-- Info del Turno Seleccionado -->
+    <div class="card mb-6 bg-blue-50 border-2 border-blue-200">
+      <div class="flex justify-between items-start">
+        <div class="flex-1">
+          <h3 class="text-lg font-semibold text-gray-900 mb-3">
+            Evaluando Turno
+          </h3>
+          <div
+            class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-2 text-sm text-gray-700"
+          >
+            <p>
+              <span class="font-semibold">Matrícula:</span>
+              {{ selectedTurno()!.vehiculo.matricula }}
+            </p>
+            <p>
+              <span class="font-semibold">Vehículo:</span>
+              {{ selectedTurno()!.vehiculo.marca }}
+              {{ selectedTurno()!.vehiculo.modelo }}
+            </p>
+            <p>
+              <span class="font-semibold">Centro:</span>
+              {{ selectedTurno()!.centro.nombre }}
+            </p>
+            <p>
+              <span class="font-semibold">Fecha:</span>
+              {{ formatTurnoDate(selectedTurno()!.fechaHora) }}
+            </p>
+            <p
+              *ngIf="selectedTurno()!.creadoPorUsuario"
+              class="col-span-1 md:col-span-2"
+            >
+              <span class="font-semibold">Reservado por:</span>
+              {{ selectedTurno()!.creadoPorUsuario!.nombre }}
+              <span class="text-gray-500 text-xs ml-1"
+                >({{ selectedTurno()!.creadoPorUsuario!.email }})</span
+              >
+            </p>
+          </div>
+        </div>
         <button
           type="button"
-          (click)="onSubmit()"
-          [disabled]="!isFormValid() || submitting()"
-          class="btn-primary flex-1">
-          <span *ngIf="!submitting()">Registrar Evaluación</span>
-          <span *ngIf="submitting()">Registrando...</span>
-        </button>
-        <button
-          type="button"
-          (click)="router.navigate(['/dashboard'])"
+          (click)="backToTurnoSelection()"
           [disabled]="submitting()"
-          class="btn-secondary">
-          Cancelar
+          class="btn-secondary text-sm ml-4"
+        >
+          ← Volver a Turnos
         </button>
       </div>
+    </div>
+
+    <!-- Chequeos -->
+    <div *ngIf="chequeosData().length > 0" class="card">
+      <h2 class="text-lg font-semibold text-gray-900 mb-4">
+        Chequeos de Inspección ({{ chequeosData().length }}/8)
+      </h2>
+
+      <div class="space-y-6">
+        <div
+          *ngFor="let chequeo of chequeosData(); let i = index"
+          class="border border-gray-200 rounded-lg p-4"
+        >
+          <div class="flex items-start justify-between mb-3">
+            <div>
+              <h3 class="text-base font-semibold text-gray-900">
+                {{ i + 1 }}. {{ chequeo.nombre }}
+              </h3>
+              <p class="text-sm text-gray-600 mt-1">
+                {{ chequeo.descripcion }}
+              </p>
+            </div>
+            <span
+              class="text-2xl font-bold"
+              [class.text-green-600]="chequeo.puntaje >= 8"
+              [class.text-yellow-600]="
+                chequeo.puntaje >= 5 && chequeo.puntaje < 8
+              "
+              [class.text-red-600]="chequeo.puntaje < 5"
+            >
+              {{ chequeo.puntaje }}/10
+            </span>
+          </div>
+
+          <div class="space-y-3">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">
+                Puntaje
+              </label>
+              <input
+                type="range"
+                min="0"
+                max="10"
+                [(ngModel)]="chequeo.puntaje"
+                (ngModelChange)="onPuntajeChange()"
+                class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
+              />
+              <div class="flex justify-between text-xs text-gray-500 mt-1">
+                <span>0</span>
+                <span>5</span>
+                <span>10</span>
+              </div>
+            </div>
+
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">
+                Observaciones
+              </label>
+              <textarea
+                [(ngModel)]="chequeo.observacion"
+                rows="2"
+                class="input-field resize-none"
+                placeholder="Observaciones sobre este chequeo..."
+              ></textarea>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Resumen -->
+    <div class="card bg-blue-50 border-2 border-blue-200">
+      <h2 class="text-lg font-semibold text-gray-900 mb-3">
+        Resumen de Evaluación
+      </h2>
+      <div class="space-y-2">
+        <div class="flex justify-between items-center">
+          <span class="text-gray-700 font-medium">Puntaje Total:</span>
+          <span class="text-3xl font-bold text-blue-600"
+            >{{ puntajeTotal() }}/100</span
+          >
+        </div>
+        <div class="flex justify-between items-center">
+          <span class="text-gray-700 font-medium">Resultado Estimado:</span>
+          <span
+            class="text-lg font-semibold"
+            [class.text-green-600]="resultadoEstimado() === 'SEGURO'"
+            [class.text-yellow-600]="resultadoEstimado() === 'CONDICIONAL'"
+            [class.text-red-600]="resultadoEstimado() === 'RECHEQUEO'"
+          >
+            {{ resultadoEstimadoNombre() }}
+          </span>
+        </div>
+      </div>
+      <div class="mt-4 p-3 bg-white rounded border border-blue-200">
+        <p class="text-sm text-gray-600">
+          <strong>Criterios:</strong><br />
+          • SEGURO: Puntaje total > 80 y todos los chequeos ≥ 5<br />
+          • RECHEQUEO: Algún chequeo < 5 o total < 40<br />
+          • CONDICIONAL: Casos intermedios
+        </p>
+      </div>
+    </div>
+
+    <!-- Botones -->
+    <div class="flex gap-3 mt-6">
+      <button
+        type="button"
+        (click)="onSubmit()"
+        [disabled]="!isFormValid() || submitting()"
+        class="btn-primary flex-1"
+      >
+        <span *ngIf="!submitting()">Registrar Evaluación</span>
+        <span *ngIf="submitting()">Registrando...</span>
+      </button>
+      <button
+        type="button"
+        (click)="backToTurnoSelection()"
+        [disabled]="submitting()"
+        class="btn-secondary"
+      >
+        Cancelar
+      </button>
     </div>
   </div>
 </div>

@@ -23,7 +23,6 @@ export interface EvaluacionDetalle {
 
 export interface CreateEvaluacionRequest {
   turnoId: string;
-  inspectorId: string;
   detalles: CreateEvaluacionDetalleRequest[];
 }
 

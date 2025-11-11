@@ -15,9 +15,11 @@ export class AuthService {
 
   private readonly accessTokenSignal = signal<string | null>(this.getStoredAccessToken());
   private readonly refreshTokenSignal = signal<string | null>(this.getStoredRefreshToken());
+  private readonly userRoleSignal = signal<string | null>(this.getStoredUserRole());
 
   public readonly isAuthenticated = computed(() => !!this.accessTokenSignal());
   public readonly accessToken = computed(() => this.accessTokenSignal());
+  public readonly userRole = computed(() => this.userRoleSignal());
 
   private getStoredAccessToken(): string | null {
     return localStorage.getItem('accessToken');
@@ -27,10 +29,17 @@ export class AuthService {
     return localStorage.getItem('refreshToken');
   }
 
+  private getStoredUserRole(): string | null {
+    return localStorage.getItem('userRole');
+  }
+
   public login(credentials: LoginRequest): Observable<LoginResponse> {
     return this.http.post<LoginResponse>(`${this.baseUrl}/login`, credentials).pipe(
       tap((response: LoginResponse) => {
         this.setTokens(response.accessToken, response.refreshToken);
+        if (response.codigoRol) {
+          this.setUserRole(response.codigoRol);
+        }
       })
     );
   }
@@ -60,10 +69,22 @@ export class AuthService {
     this.refreshTokenSignal.set(refreshToken);
   }
 
+  private setUserRole(role: string): void {
+    localStorage.setItem('userRole', role);
+    this.userRoleSignal.set(role);
+  }
+
+  public hasRole(roles: string[]): boolean {
+    const currentRole: string | null = this.userRole();
+    return currentRole ? roles.includes(currentRole) : false;
+  }
+
   private clearTokens(): void {
     localStorage.removeItem('accessToken');
     localStorage.removeItem('refreshToken');
+    localStorage.removeItem('userRole');
     this.accessTokenSignal.set(null);
     this.refreshTokenSignal.set(null);
+    this.userRoleSignal.set(null);
   }
 }

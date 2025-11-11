@@ -62,11 +62,36 @@
       </div>
     </div>
 
-    <!-- Evaluaciones History -->
+    <!-- Tabs -->
     <div class="card">
-      <h3 class="text-xl font-semibold text-gray-900 mb-4">Historial de Evaluaciones</h3>
+      <div class="border-b border-gray-200 mb-4">
+        <nav class="flex gap-4">
+          <button
+            type="button"
+            (click)="setActiveTab('evaluaciones')"
+            [class.border-blue-500]="activeTab() === 'evaluaciones'"
+            [class.text-blue-600]="activeTab() === 'evaluaciones'"
+            [class.border-transparent]="activeTab() !== 'evaluaciones'"
+            [class.text-gray-500]="activeTab() !== 'evaluaciones'"
+            class="py-2 px-1 border-b-2 font-medium text-sm transition-colors hover:text-blue-600">
+            Historial de Evaluaciones
+          </button>
+          <button
+            type="button"
+            (click)="setActiveTab('turnos')"
+            [class.border-blue-500]="activeTab() === 'turnos'"
+            [class.text-blue-600]="activeTab() === 'turnos'"
+            [class.border-transparent]="activeTab() !== 'turnos'"
+            [class.text-gray-500]="activeTab() !== 'turnos'"
+            class="py-2 px-1 border-b-2 font-medium text-sm transition-colors hover:text-blue-600">
+            Historial de Turnos
+          </button>
+        </nav>
+      </div>
 
-      <app-loading-spinner *ngIf="loadingEvaluaciones()" [size]="32" message="Cargando evaluaciones..."></app-loading-spinner>
+      <!-- Tab Content: Evaluaciones -->
+      <div *ngIf="activeTab() === 'evaluaciones'">
+        <app-loading-spinner *ngIf="loadingEvaluaciones()" [size]="32" message="Cargando evaluaciones..."></app-loading-spinner>
 
       <div *ngIf="!loadingEvaluaciones() && evaluaciones().length === 0" class="text-center py-8 text-gray-500">
         No hay evaluaciones registradas para este vehículo.
@@ -147,6 +172,42 @@
               class="btn-secondary text-sm">
               Siguiente
             </button>
+          </div>
+        </div>
+      </div>
+      </div>
+
+      <!-- Tab Content: Turnos -->
+      <div *ngIf="activeTab() === 'turnos'">
+        <app-loading-spinner *ngIf="loadingTurnos()" [size]="32" message="Cargando turnos..."></app-loading-spinner>
+
+        <div *ngIf="!loadingTurnos() && turnos().length === 0" class="text-center py-8 text-gray-500">
+          No hay turnos registrados para este vehículo.
+        </div>
+
+        <div *ngIf="!loadingTurnos() && turnos().length > 0" class="space-y-4">
+          <div *ngFor="let turno of turnos()" 
+               class="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
+            <div class="flex items-start justify-between">
+              <div class="flex-1">
+                <div class="flex items-center gap-3 mb-2">
+                  <span class="text-sm font-medium text-gray-900">
+                    {{ formatTurnoDate(turno.fechaHora) }}
+                  </span>
+                  <app-badge [color]="getEstadoTurnoColor(turno.estadoTurno.codigo)">
+                    {{ turno.estadoTurno.nombre }}
+                  </app-badge>
+                </div>
+                <div class="text-sm text-gray-600 space-y-1">
+                  <p><span class="font-semibold">Centro:</span> {{ turno.centro.nombre }}</p>
+                  <p><span class="font-semibold">Dirección:</span> {{ turno.centro.direccion }}</p>
+                  <p *ngIf="turno.creadoPorUsuario" class="text-xs text-gray-500 mt-2 pt-2 border-t border-gray-200">
+                    <span class="font-semibold">Reservado por:</span> {{ turno.creadoPorUsuario.nombre }}
+                    <span class="block text-gray-400">{{ turno.creadoPorUsuario.email }}</span>
+                  </p>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>

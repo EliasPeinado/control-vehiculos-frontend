@@ -41,5 +41,12 @@ testem.log
 .DS_Store
 Thumbs.db
 
-# Markdown files
+# Markdown files (except E2E docs)
 *.md
+!e2e/README.md
+
+# Playwright
+/test-results/
+/playwright-report/
+/playwright/.cache/
+.env.e2e

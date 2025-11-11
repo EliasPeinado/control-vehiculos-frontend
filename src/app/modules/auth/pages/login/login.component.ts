@@ -53,4 +53,10 @@ export class LoginComponent {
       }
     });
   }
+
+  protected fillDemoCredentials(email: string): void {
+    this.credentials.email = email;
+    this.credentials.password = 'Passw0rd!';
+    this.errorMessage.set(null);
+  }
 }

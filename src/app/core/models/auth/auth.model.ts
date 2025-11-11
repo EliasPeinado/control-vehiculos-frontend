@@ -8,6 +8,7 @@ export interface LoginResponse {
   refreshToken: string;
   tokenType: string;
   expiresIn: number;
+  codigoRol?: string;
 }
 
 export interface RefreshTokenRequest {

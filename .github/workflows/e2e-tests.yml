@@ -1,0 +1,79 @@
+name: E2E Tests
+
+on:
+  push:
+    branches: [ main, develop, master ]
+  pull_request:
+    branches: [ main, develop, master ]
+  workflow_dispatch: # Permite ejecutar manualmente desde GitHub
+
+jobs:
+  test:
+    timeout-minutes: 60
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+
+    - name: Install dependencies
+      run: npm ci
+
+    - name: Install Playwright Browsers
+      run: npx playwright install --with-deps
+
+    - name: Build application
+      run: npm run build
+      continue-on-error: true
+
+    - name: Run E2E tests
+      run: npm run e2e
+      env:
+        CI: true
+      continue-on-error: true
+
+    - name: Upload Playwright Report
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: playwright-report
+        path: playwright-report/
+        retention-days: 30
+
+    - name: Upload Test Results
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: test-results
+        path: test-results/
+        retention-days: 7
+
+    - name: Comment PR with results
+      if: github.event_name == 'pull_request' && always()
+      uses: actions/github-script@v7
+      with:
+        script: |
+          const fs = require('fs');
+          const reportPath = 'playwright-report/index.html';
+          
+          let comment = '## 🎭 Playwright E2E Test Results\n\n';
+          
+          if (fs.existsSync(reportPath)) {
+            comment += '✅ Tests ejecutados. Revisa los artifacts para ver el reporte completo.\n\n';
+            comment += '📊 [Ver Reporte HTML en Artifacts](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})\n';
+          } else {
+            comment += '⚠️ No se pudo generar el reporte de tests.\n';
+          }
+          
+          github.rest.issues.createComment({
+            issue_number: context.issue.number,
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            body: comment
+          });

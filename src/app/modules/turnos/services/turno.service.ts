@@ -34,4 +34,17 @@ export class TurnoService {
   public cancelar(turnoId: string, request: CancelarTurnoRequest): Observable<void> {
     return this.http.post<void>(`${this.baseUrl}/${turnoId}/cancelar`, request);
   }
+
+  public getAll(centroId?: string, matricula?: string): Observable<Turno[]> {
+    let params: HttpParams = new HttpParams();
+    
+    if (centroId) {
+      params = params.set('centroId', centroId);
+    }
+    if (matricula) {
+      params = params.set('matricula', matricula);
+    }
+    
+    return this.http.get<Turno[]>(this.baseUrl, { params });
+  }
 }

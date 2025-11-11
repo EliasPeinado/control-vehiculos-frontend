@@ -3,6 +3,7 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '@environments/environment';
 import { Vehiculo, CreateVehiculoRequest, UpdateVehiculoRequest } from '@core/models/vehiculos/vehiculo.model';
+import { Turno } from '@core/models/turnos/turno.model';
 import { PagedResponse } from '@core/models/common/api-response.model';
 import { Evaluacion } from '@core/models/evaluaciones/evaluacion.model';
 
@@ -35,5 +36,9 @@ export class VehiculoService {
       .set('pageSize', pageSize.toString());
     
     return this.http.get<PagedResponse<Evaluacion>>(`${this.baseUrl}/${matricula}/evaluaciones`, { params });
+  }
+
+  public getTurnos(matricula: string): Observable<Turno[]> {
+    return this.http.get<Turno[]>(`${this.baseUrl}/${matricula}/turnos`);
   }
 }

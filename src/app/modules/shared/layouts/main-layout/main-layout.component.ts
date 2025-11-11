@@ -14,6 +14,7 @@ export class MainLayoutComponent {
   private readonly router: Router = inject(Router);
 
   protected readonly isAuthenticated = computed(() => this.authService.isAuthenticated());
+  protected readonly canEvaluate = computed(() => this.authService.hasRole(['INSPECTOR', 'ADMIN']));
 
   protected logout(): void {
     this.authService.logout();
