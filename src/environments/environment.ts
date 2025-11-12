@@ -1,5 +1,5 @@
 export const environment = {
   production: false,
-  apiUrl: 'https://localhost:7053',
-  apiVersion: 'v1'
+  apiUrl: 'https://control-vehiculos-backend-1.onrender.com',
+  apiVersion: 'v1',
 };
