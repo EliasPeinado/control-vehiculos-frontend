@@ -73,7 +73,7 @@ export class NuevaEvaluacionComponent implements OnInit, OnDestroy {
     const chequeos: ChequeoFormData[] = this.chequeosData();
     const tieneReprobado: boolean = chequeos.some(c => c.puntaje < 5);
 
-    if (total > 80 && !tieneReprobado) {
+    if (total === 80 && !tieneReprobado) {
       return 'SEGURO';
     } else if (tieneReprobado || total < 40) {
       return 'RECHEQUEO';
